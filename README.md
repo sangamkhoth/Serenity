@@ -27,7 +27,7 @@ We believe that the user interface is the first step in care.
 
 ---
 
-## 🏗️ Core Portals
+## 🏗️ Core Portals & Capabilities
 
 ### 🎓 Student Portal
 - **Daily Mood Check-ins**: Simple, emoji-based tracking to monitor emotional trends.
@@ -39,31 +39,41 @@ We believe that the user interface is the first step in care.
 - **Case Management**: Student overview with status indicators (*Improving*, *Stable*, *Needs Care*).
 - **Care History**: Viewing longitudinal student check-in data and reflection trends.
 - **Session Notes**: Confidential, encrypted documentation for professional use.
-- **Escalation Workflow**: Tools for proactive outreach to students showing signs of distress.
 
 ### 📊 Admin Portal
 - **Privacy-Preserving Analytics**: High-level, aggregated university health metrics.
 - **Trust Architecture**: Administration has ZERO access to individual student data, reflections, or notes.
-- **System Health**: Real-time monitoring of platform engagement and attendance rates.
+
+---
+
+## 🔐 Architecture & Authentication
+
+Serenity has been upgraded from a static prototype to a production-ready authentication flow using **Supabase Auth**.
+
+- **Next.js Middleware**: All core routes (`/student`, `/psychologist`, `/admin`) are fully protected. Unauthenticated users are securely redirected to the login flow.
+- **Role-Based Routing**: Upon signing in, Supabase `user_metadata` determines your role and automatically routes you to your dedicated, role-specific dashboard.
+- **Dynamic User Sessions**: The dashboards dynamically fetch and display the real signed-in user's name from the secure session token, and offer contextual empty states until real database records are populated.
 
 ---
 
 ## 🛠️ Technology Stack
 
 - **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
-- **Styling**: Tailwind CSS & Custom CSS Design Tokens
-- **Database/Auth**: [Supabase](https://supabase.com/) (PostgreSQL with RLS)
-- **Animations**: Framer Motion
+- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL with RLS, Server-side Auth)
+- **Deployment**: [Vercel](https://vercel.com)
+- **Styling**: Vanilla CSS Modules & Design Tokens
+- **Animations**: CSS Keyframes + Framer Motion (planned)
 - **Visualization**: Recharts
-- **Typo**: Google Fonts (Lora, DM Sans)
+- **Typography**: Google Fonts (Lora, DM Sans)
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started Locally
 
 ### Prerequisites
 - Node.js (Latest LTS)
 - npm or yarn
+- A Supabase Project
 
 ### Installation
 1. Clone the repository:
@@ -75,31 +85,30 @@ We believe that the user interface is the first step in care.
    ```bash
    npm install
    ```
-3. Run the development server:
+3. Copy the environment variables:
+   ```bash
+   cp .env.example .env.local
+   ```
+   *Fill in your `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.*
+4. Run the development server:
    ```bash
    npm run dev
    ```
-   *Note: Runs on [http://localhost:3001](http://localhost:3001)*
 
 ---
 
-## 🧪 Prototype Demo
+## 🧪 Try the Prototype Demo
 
-Serenity is currently in **Prototype Mode**. You can explore any portal without a live Supabase account using the demo links on the login page:
+Want to see Serenity's UI populated with rich data without registering an account? 
 
-- **Student Demo**: `priya@university.edu`
-- **Psychologist Demo**: `dr.williams@serenity.health`
-- **Admin Demo**: `admin@university.edu`
+We maintain dedicated **`/demo`** routes that intentionally bypass Supabase authentication to showcase the platform's vision using beautiful mock data components.
 
----
+You can explore these directly from the "Demo Accounts" section on the login page:
+- **[Student Demo Dashboard](/demo/student)**
+- **[Psychologist Demo Dashboard](/demo/psychologist)**
+- **[Admin Demo Dashboard](/demo/admin)**
 
-## 🛡️ Privacy & Security
-
-Serenity implements **Row Level Security (RLS)** at the database level to ensure data isolation:
-- Students only see their own data.
-- Psychologists only see data for students assigned to them.
-- Administrators only see aggregated, anonymous views.
-- **Audit Logs**: Every access to sensitive data is logged for accountability.
+*(Note: Real accounts created via sign-up will hit the protected routes and see their own clean, empty dashboard states).*
 
 ---
 
