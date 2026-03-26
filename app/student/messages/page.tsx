@@ -1,23 +1,66 @@
 'use client'
 
-import { useState } from 'react'
-import { mockMessages } from '@/lib/mock-data'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+// Hardcoded IDs from our seed script to bypass actual auth flow
+const STUDENT_ID = '11111111-1111-1111-1111-111111111111'
+const PSYCHOLOGIST_ID = '22222222-2222-2222-2222-222222222222'
+const THREAD_ID = '33333333-3333-3333-3333-333333333333'
 
 export default function MessagesPage() {
     const [newMessage, setNewMessage] = useState('')
-    const [messages, setMessages] = useState(mockMessages)
+    const [messages, setMessages] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const supabase = createClient()
 
-    const handleSend = () => {
+    useEffect(() => {
+        const fetchMessages = async () => {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('thread_id', THREAD_ID)
+                .order('created_at', { ascending: true })
+
+            if (data) {
+                setMessages(data)
+            }
+            setLoading(false)
+        }
+        
+        // Initial fetch
+        fetchMessages()
+
+        // Realtime subscription
+        const channel = supabase.channel('realtime messages')
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `thread_id=eq.${THREAD_ID}`,
+            }, (payload) => {
+                setMessages(current => [...current, payload.new])
+            })
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [supabase])
+
+    const handleSend = async () => {
         if (!newMessage.trim()) return
-        setMessages([...messages, {
-            id: `m${Date.now()}`,
-            from: 'student',
-            senderName: 'Priya Sharma',
-            text: newMessage.trim(),
-            timestamp: new Date().toISOString(),
-            read: false,
-        }])
-        setNewMessage('')
+
+        // Optimistic UI update could go here, but with realtime we can also just wait
+        const content = newMessage.trim()
+        setNewMessage('') // Clear input quickly
+
+        await supabase.from('messages').insert({
+            sender_id: STUDENT_ID,
+            recipient_id: PSYCHOLOGIST_ID,
+            thread_id: THREAD_ID,
+            content: content
+        })
     }
 
     return (
@@ -58,8 +101,10 @@ export default function MessagesPage() {
                 flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px',
                 padding: '4px 0', marginBottom: '20px',
             }}>
-                {messages.map(msg => {
-                    const isStudent = msg.from === 'student'
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-soft-gray)' }}>Loading messages...</div>
+                ) : messages.map(msg => {
+                    const isStudent = msg.sender_id === STUDENT_ID
                     return (
                         <div key={msg.id} style={{
                             display: 'flex', flexDirection: 'column',
@@ -77,7 +122,7 @@ export default function MessagesPage() {
                                 fontSize: 'var(--text-sm)',
                                 lineHeight: 1.6,
                             }}>
-                                {msg.text}
+                                {msg.content}
                             </div>
                             <p style={{
                                 fontSize: '11px',
@@ -85,12 +130,15 @@ export default function MessagesPage() {
                                 marginTop: '4px',
                                 fontWeight: 300,
                             }}>
-                                {new Date(msg.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                {msg.read && isStudent && ' · Read ✓'}
+                                {new Date(msg.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                {msg.is_read && isStudent && ' · Read ✓'}
                             </p>
                         </div>
                     )
                 })}
+                {!loading && messages.length === 0 && (
+                     <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-soft-gray)' }}>No messages yet. Send a message to start the conversation!</div>
+                )}
             </div>
 
             {/* Input */}
