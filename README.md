@@ -99,4 +99,4 @@ Serenity has been upgraded from a static prototype to a production-ready authent
 
 ---
 
-Designed with 💚 by **Rishabh Vishwakarma**
+
